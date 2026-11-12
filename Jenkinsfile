@@ -1,69 +1,68 @@
 
 pipeline {
+    // Run this pipeline on any available Jenkins agent
     agent any
-
-    tools {
-        jdk 'JDK 21'
-    }
-
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-    }
 
     stages {
 
+        // Stage 1: Checkout source code from GitHub
         stage('Checkout') {
             steps {
-                echo 'Checking out source code...'
-                checkout scm
+                // Clone the GitHub repository into the Jenkins workspace
+                git 'https://github.com/vishalsnsingh/spring-boot.git'
             }
         }
 
-        stage('Build and Test') {
+        // Stage 2: Build the Spring Boot application
+        stage('Build') {
             steps {
-                echo 'Building Spring Boot application and running tests...'
-
+                // Give execute permission to Maven Wrapper
                 sh 'chmod +x mvnw'
 
-                sh './mvnw --batch-mode clean verify'
+                // Clean previous build files and package the application
+                sh './mvnw --batch-mode clean package'
+            }
+        }
+
+        // Stage 3: Run automated tests
+        stage('Test') {
+            steps {
+                // Run all Maven tests
+                sh './mvnw --batch-mode test'
             }
 
             post {
+                // Publish test results even if the test stage fails
                 always {
-                    echo 'Publishing test results...'
-
-                    junit testResults: 'target/surefire-reports/*.xml',
-                          allowEmptyResults: true
+                    junit '**/target/surefire-reports/TEST-*.xml'
                 }
             }
         }
 
-        stage('Package') {
+        // Stage 4: Deploy the application
+        stage('Deploy') {
             steps {
-                echo 'Packaging Spring Boot application...'
-
-                sh './mvnw --batch-mode package -DskipTests'
+                // Placeholder command; replace with actual deployment steps
+                sh 'echo "Application deployed successfully"'
             }
         }
-
     }
 
+    // Actions to execute after the entire pipeline finishes
     post {
-
         success {
-            echo 'Build completed successfully!'
-
-            archiveArtifacts artifacts: 'target/*.jar',
-                             fingerprint: true
+            // Runs when all stages complete successfully
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
-            echo 'Build failed! Please check the Jenkins console output.'
+            // Runs if any stage fails
+            echo 'Pipeline failed! Check the Jenkins console output.'
         }
 
         always {
-            echo 'Pipeline execution completed.'
+            // Runs regardless of pipeline result
+            echo 'Pipeline execution finished.'
         }
     }
 }
